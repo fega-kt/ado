@@ -2,28 +2,62 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
+<script>
+(function(){
+  try{
+    var t = localStorage.getItem('ado-theme');
+    if(t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+  }catch(e){}
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ADO Project Dashboard — So sánh 2 nhánh</title>
 <style>
   :root{
     --bg:#0a0e15;
     --panel:#131a26; --panel-hover:#161e2c; --panel2:#0e141e; --line:#212c3d; --line2:#2a3850;
-    --ink:#e4ecf5; --muted:#8493a8; --dim:#576375;
+    --ink:#e4ecf5; --muted:#8493a8; --dim:#576375; --float:#16202f;
     --blue:#5aa9ff; --blue-dim:#3d7ecf; --green:#3fce7c; --red:#ff6161; --amber:#ffb547; --violet:#b18cff; --cyan:#39d0d8;
     --mono:Consolas,"Cascadia Code","SF Mono",Menlo,monospace;
     --sans:"Segoe UI",system-ui,-apple-system,sans-serif;
     --shadow:0 1px 2px rgba(0,0,0,.2), 0 8px 24px -12px rgba(0,0,0,.5);
     --radius:12px;
+    --stripe:rgba(255,255,255,.014);
+    --overlay-a:rgba(90,169,255,.08); --overlay-b:rgba(177,140,255,.06);
+    --err-bg:#2a1215; --err-border:#5c2326; --err-ink:#ffb4b4;
+  }
+  @media (prefers-color-scheme: light){
+    :root:not([data-theme="dark"]){
+      --bg:#f2f4f8;
+      --panel:#ffffff; --panel-hover:#eef1f6; --panel2:#eef1f6; --line:#dde3ec; --line2:#c7d0de;
+      --ink:#182230; --muted:#5c6b7e; --dim:#61707f; --float:#ffffff;
+      --blue:#1f6fd6; --blue-dim:#175aad; --green:#0d7d44; --red:#c22f34; --amber:#8a5c08; --violet:#7c4fd0; --cyan:#0f7e8c;
+      --shadow:0 1px 2px rgba(15,23,42,.06), 0 8px 24px -12px rgba(15,23,42,.15);
+      --stripe:rgba(15,23,42,.022);
+      --overlay-a:rgba(31,111,214,.05); --overlay-b:rgba(124,79,208,.04);
+      --err-bg:#fdecec; --err-border:#f3b7b7; --err-ink:#9a2228;
+    }
+  }
+  :root[data-theme="light"]{
+    --bg:#f2f4f8;
+    --panel:#ffffff; --panel-hover:#eef1f6; --panel2:#eef1f6; --line:#dde3ec; --line2:#c7d0de;
+    --ink:#182230; --muted:#5c6b7e; --dim:#61707f; --float:#ffffff;
+    --blue:#1f6fd6; --blue-dim:#175aad; --green:#0d7d44; --red:#c22f34; --amber:#8a5c08; --violet:#7c4fd0; --cyan:#0f7e8c;
+    --shadow:0 1px 2px rgba(15,23,42,.06), 0 8px 24px -12px rgba(15,23,42,.15);
+    --stripe:rgba(15,23,42,.022);
+    --overlay-a:rgba(31,111,214,.05); --overlay-b:rgba(124,79,208,.04);
+    --err-bg:#fdecec; --err-border:#f3b7b7; --err-ink:#9a2228;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html{scrollbar-color:var(--line) transparent}
   ::selection{background:rgba(90,169,255,.3)}
   body{
     background:
-      radial-gradient(1100px 500px at 15% -8%, rgba(90,169,255,.08), transparent 60%),
-      radial-gradient(900px 460px at 100% 0%, rgba(177,140,255,.06), transparent 55%),
+      radial-gradient(1100px 500px at 15% -8%, var(--overlay-a), transparent 60%),
+      radial-gradient(900px 460px at 100% 0%, var(--overlay-b), transparent 55%),
       var(--bg);
-    color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.55;min-height:100vh
+    color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.55;min-height:100vh;
+    transition:background-color .15s,color .15s
   }
   a{color:var(--blue);text-decoration:none}
   a:hover{text-decoration:underline}
@@ -38,11 +72,12 @@
   header .sub{color:var(--muted);font-size:12.5px;padding:3px 10px;border:1px solid var(--line);border-radius:20px;background:var(--panel2)}
 
   /* ===== Config ===== */
-  .cfg{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:var(--radius);padding:20px 22px;margin-bottom:20px;box-shadow:var(--shadow);transition:border-color .15s}
+  .cfg{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:var(--radius);padding:20px 22px;margin-bottom:20px;box-shadow:var(--shadow);transition:background-color .2s ease,border-color .2s ease,color .2s ease}
   .cfg h2{font-size:12.5px;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:14px;font-weight:700}
+  .cfg h2.cfg-head{display:flex;align-items:center}
   .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
   .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-weight:600}
-  .field input{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:8px;color:var(--ink);padding:9px 12px;font-family:var(--mono);font-size:12.5px;outline:none;transition:border-color .15s,box-shadow .15s}
+  .field input{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:8px;color:var(--ink);padding:9px 12px;font-family:var(--mono);font-size:12.5px;outline:none;transition:background-color .2s ease,border-color .2s ease,color .2s ease,box-shadow .15s}
   .field input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(90,169,255,.14)}
   .field .hint{font-size:11px;color:var(--dim);margin-top:5px}
 
@@ -54,8 +89,8 @@
   .icon-btn svg{width:100%;height:100%}
   .icon-btn:hover,.icon-btn:focus-visible{color:var(--blue);background:rgba(90,169,255,.14);outline:none}
   .tip{position:relative}
-  .tip .tip-bubble{position:absolute;left:0;bottom:calc(100% + 8px);background:#16202f;border:1px solid var(--line2);border-radius:8px;padding:9px 12px;font-size:11.5px;line-height:1.55;color:var(--ink);font-weight:400;letter-spacing:normal;text-transform:none;white-space:normal;width:250px;box-shadow:0 14px 30px -8px rgba(0,0,0,.6);opacity:0;visibility:hidden;transform:translateY(3px);transition:opacity .15s,transform .15s,visibility .15s;z-index:40;cursor:default}
-  .tip .tip-bubble::after{content:'';position:absolute;top:100%;left:8px;border:6px solid transparent;border-top-color:#16202f}
+  .tip .tip-bubble{position:absolute;left:0;bottom:calc(100% + 8px);background:var(--float);border:1px solid var(--line2);border-radius:8px;padding:9px 12px;font-size:11.5px;line-height:1.55;color:var(--ink);font-weight:400;letter-spacing:normal;text-transform:none;white-space:normal;width:250px;box-shadow:0 14px 30px -8px rgba(0,0,0,.4);opacity:0;visibility:hidden;transform:translateY(3px);transition:opacity .15s,transform .15s,visibility .15s;z-index:40;cursor:default}
+  .tip .tip-bubble::after{content:'';position:absolute;top:100%;left:8px;border:6px solid transparent;border-top-color:var(--float)}
   .tip:hover .tip-bubble,.tip:focus-visible .tip-bubble,.tip:focus-within .tip-bubble{opacity:1;visibility:visible;transform:translateY(0)}
   .cfg-actions{display:flex;gap:10px;align-items:center;margin-top:16px;flex-wrap:wrap}
   button{background:linear-gradient(180deg,#66b3ff,var(--blue));color:#06121f;border:none;border-radius:8px;padding:10px 20px;font-weight:700;font-size:13px;cursor:pointer;font-family:var(--sans);box-shadow:0 2px 10px -3px rgba(90,169,255,.5);transition:filter .15s,transform .1s}
@@ -67,7 +102,7 @@
   #cmp-progress{color:var(--muted);font-size:12.5px}
 
   /* ===== Panels / sections ===== */
-  section{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;margin-bottom:20px;box-shadow:var(--shadow)}
+  section{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;margin-bottom:20px;box-shadow:var(--shadow);transition:background-color .2s ease,border-color .2s ease}
   section h2{font-size:12.5px;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;position:relative;padding-right:24px;user-select:none;font-weight:700}
   section h2 .cnt{font-family:var(--mono);color:var(--dim);font-size:11.5px;text-transform:none;font-weight:400}
   section h2::after{content:'▾';position:absolute;right:0;top:50%;transform:translateY(-50%);color:var(--dim);font-size:11px;transition:transform .15s}
@@ -87,21 +122,21 @@
 
   /* ===== Searchable combobox ===== */
   .combo{position:relative}
-  .combo input{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:8px;color:var(--ink);padding:9px 34px 9px 12px;font-family:var(--mono);font-size:12.5px;outline:none;transition:border-color .15s,box-shadow .15s;cursor:text}
+  .combo input{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:8px;color:var(--ink);padding:9px 34px 9px 12px;font-family:var(--mono);font-size:12.5px;outline:none;transition:background-color .2s ease,border-color .2s ease,color .2s ease,box-shadow .15s;cursor:text}
   .combo input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(90,169,255,.14)}
   .combo input:disabled{opacity:.5;cursor:not-allowed}
   .combo::after{content:'⌄';position:absolute;right:12px;top:9px;color:var(--dim);font-size:13px;pointer-events:none}
-  .combo-list{position:absolute;left:0;right:0;top:calc(100% + 5px);background:#16202f;border:1px solid var(--line2);border-radius:9px;max-height:260px;overflow-y:auto;z-index:30;display:none;box-shadow:0 12px 32px -8px rgba(0,0,0,.6);padding:4px}
+  .combo-list{position:absolute;left:0;right:0;top:calc(100% + 5px);background:var(--float);border:1px solid var(--line2);border-radius:9px;max-height:260px;overflow-y:auto;z-index:30;display:none;box-shadow:0 12px 32px -8px rgba(0,0,0,.4);padding:4px}
   .combo-list.open{display:block}
   .combo-opt{padding:7px 10px;border-radius:6px;font-family:var(--mono);font-size:12.5px;color:var(--ink);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .combo-opt mark{background:rgba(90,169,255,.3);color:#fff;border-radius:2px;padding:0 1px}
-  .combo-opt:hover,.combo-opt.hi{background:rgba(90,169,255,.14);color:#fff}
+  .combo-opt mark{background:rgba(90,169,255,.3);color:var(--ink);border-radius:2px;padding:0 1px}
+  .combo-opt:hover,.combo-opt.hi{background:rgba(90,169,255,.14);color:var(--ink)}
   .combo-empty{padding:8px 10px;color:var(--dim);font-size:12px;font-style:italic}
 
   /* ===== Result search bar ===== */
   .search-row{display:flex;align-items:center;gap:10px;margin-bottom:14px}
   .search-row .sfield{position:relative;flex:1;max-width:420px}
-  .search-row input{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:8px;color:var(--ink);padding:9px 12px 9px 32px;font-size:13px;outline:none;transition:border-color .15s,box-shadow .15s}
+  .search-row input{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:8px;color:var(--ink);padding:9px 12px 9px 32px;font-size:13px;outline:none;transition:background-color .2s ease,border-color .2s ease,color .2s ease,box-shadow .15s}
   .search-row input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(90,169,255,.14)}
   .search-row .sfield::before{content:'';position:absolute;left:11px;top:50%;width:9px;height:9px;margin-top:-7px;border:2px solid var(--dim);border-radius:50%}
   .search-row .sfield::after{content:'';position:absolute;left:18px;top:50%;width:6px;height:2px;margin-top:2px;background:var(--dim);transform:rotate(45deg);border-radius:2px}
@@ -113,10 +148,10 @@
   th{color:var(--muted);text-align:left;font-weight:700;border-bottom:1px solid var(--line2);padding:8px 10px;white-space:nowrap;cursor:pointer;user-select:none;background:var(--panel2);position:sticky;top:0;z-index:1}
   th.num,td.num{text-align:right;font-family:var(--mono)}
   td{border-bottom:1px solid rgba(31,42,56,.5);padding:7px 10px;vertical-align:top}
-  tbody tr:nth-child(even) td{background:rgba(255,255,255,.012)}
+  tbody tr:nth-child(even) td{background:var(--stripe)}
   tr:hover td{background:rgba(90,169,255,.06)}
   tr.filtered-out{display:none}
-  .tag{display:inline-block;background:var(--panel2);border:1px solid var(--line);border-radius:5px;padding:1px 7px;font-size:11px;font-family:var(--mono);color:var(--muted);margin:1px 2px 1px 0;transition:border-color .15s,color .15s}
+  .tag{display:inline-block;background:var(--panel2);border:1px solid var(--line);border-radius:5px;padding:1px 7px;font-size:11px;font-family:var(--mono);color:var(--muted);margin:1px 2px 1px 0;transition:background-color .2s ease,border-color .15s,color .15s}
   .tag:hover{border-color:var(--blue-dim);color:var(--blue)}
   .tag.reactive{color:var(--red);border-color:#4a2326}
   .pill{display:inline-block;border-radius:10px;padding:2px 10px;font-size:11px;font-family:var(--mono);font-weight:600}
@@ -127,6 +162,20 @@
   .pill.qa{background:rgba(177,140,255,.14);color:var(--violet)}
   .empty{color:var(--dim);font-style:italic;padding:14px 0}
   .foot-note{color:var(--dim);font-size:11.5px;margin-top:8px;line-height:1.6}
+  .err-box{display:none;background:var(--err-bg);border:1px solid var(--err-border);color:var(--err-ink);border-radius:8px;padding:12px;margin-top:12px;font-family:var(--mono);font-size:12px;white-space:pre-wrap;word-break:break-all}
+
+  /* ===== Theme toggle ===== */
+  .theme-toggle{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border-radius:50%;border:1px solid var(--line);background:var(--panel2);color:var(--muted);cursor:pointer;margin-left:auto;flex-shrink:0;box-shadow:none;transition:color .15s,border-color .15s,background .15s,transform .15s}
+  .theme-toggle:hover{color:var(--blue);border-color:var(--line2);background:var(--panel-hover);transform:scale(1.08)}
+  .theme-toggle:active{transform:scale(.9)}
+  .theme-toggle svg{width:16px;height:16px;display:block}
+  @keyframes theme-spin{
+    0%{transform:rotate(0deg) scale(1);opacity:1}
+    45%{transform:rotate(150deg) scale(.55);opacity:0}
+    55%{transform:rotate(210deg) scale(.55);opacity:0}
+    100%{transform:rotate(360deg) scale(1);opacity:1}
+  }
+  .theme-toggle.spin svg{animation:theme-spin .5s cubic-bezier(.4,0,.2,1)}
 </style>
 </head>
 <body>
@@ -142,7 +191,9 @@
 
 <!-- ============ KẾT NỐI (dùng chung cho mọi chức năng) ============ -->
 <div class="cfg">
-  <h2>Kết nối</h2>
+  <h2 class="cfg-head"><span>Kết nối</span>
+    <button type="button" class="theme-toggle" id="theme-toggle" title="Đổi giao diện sáng/tối" aria-label="Đổi giao diện sáng/tối"></button>
+  </h2>
   <div class="grid">
     <div class="field">
       <label>Server / Collection URL</label>
@@ -226,7 +277,7 @@
       </div>
       <div class="foot-note" id="cmp-note" style="margin-top:10px"></div>
     </div>
-    <div id="cmp-err" style="display:none;background:#2a1215;border:1px solid #5c2326;color:#ffb4b4;border-radius:8px;padding:12px;margin-top:12px;font-family:var(--mono);font-size:12px;white-space:pre-wrap;word-break:break-all"></div>
+    <div id="cmp-err" class="err-box"></div>
 </div><!-- /cmp -->
 
 </div><!-- /wrap -->
@@ -240,6 +291,30 @@
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const fmt = n => (n ?? 0).toLocaleString('vi-VN');
+
+/* ---------- dark/light theme toggle (icon bóng đèn) ---------- */
+const BULB_PATH = 'M8 1.4a4.4 4.4 0 0 0-2.4 8.06c.42.28.53.62.53 1.04v.3h3.74v-.3c0-.42.11-.76.53-1.04A4.4 4.4 0 0 0 8 1.4Z';
+const BULB_BASE = 'M6.3 12.6h3.4M6.6 14h2.8';
+const BULB_ON_ICON = `<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="${BULB_PATH}" fill="currentColor" fill-opacity=".22" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="${BULB_BASE}" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M6.6 5.6 8 7l1.4-1.4" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const BULB_OFF_ICON = `<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="${BULB_PATH}" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="${BULB_BASE}" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`;
+function currentTheme(){
+  const explicit = document.documentElement.getAttribute('data-theme');
+  if(explicit) return explicit;
+  try{ return matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'; }
+  catch(e){ return 'dark'; }
+}
+function applyThemeIcon(){
+  $('#theme-toggle').innerHTML = currentTheme() === 'light' ? BULB_ON_ICON : BULB_OFF_ICON;
+}
+function setTheme(t){
+  document.documentElement.setAttribute('data-theme', t);
+  try{ localStorage.setItem('ado-theme', t); }catch(e){}
+  const btn = $('#theme-toggle');
+  btn.classList.remove('spin'); void btn.offsetWidth; btn.classList.add('spin');
+  applyThemeIcon();
+}
+$('#theme-toggle').addEventListener('click', () => setTheme(currentTheme() === 'light' ? 'dark' : 'light'));
+applyThemeIcon();
 
 let cfg = {};
 
