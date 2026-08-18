@@ -14,6 +14,11 @@ const SRC = path.join(__dirname, 'public', 'index.html');
 const OUT_DIR = path.join(__dirname, 'dist');
 const OUT = path.join(OUT_DIR, 'index.html');
 
+// Domain thật sẽ chạy bản build này — code sẽ tự vô hiệu hoá nếu bị copy sang domain khác.
+// Đổi qua biến môi trường OBFUSCATE_DOMAIN (phân tách dấu phẩy) khi deploy domain khác, hoặc để rỗng để tắt domain lock.
+const domains = (process.env.OBFUSCATE_DOMAIN ?? 'ado.zhizhu.online')
+  .split(',').map(d => d.trim()).filter(Boolean);
+
 const OBFUSCATE_OPTS = {
   compact: true,
   controlFlowFlattening: true,
@@ -26,6 +31,10 @@ const OBFUSCATE_OPTS = {
   identifierNamesGenerator: 'hexadecimal',
   renameGlobals: true,
   selfDefending: true,
+  debugProtection: true,
+  debugProtectionInterval: 4000,
+  disableConsoleOutput: true,
+  ...(domains.length ? { domainLock: domains, domainLockRedirectUrl: 'about:blank' } : {}),
 };
 
 const html = fs.readFileSync(SRC, 'utf8');
