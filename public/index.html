@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ADO Project Dashboard — So sánh 2 nhánh</title>
+<style>
+  :root{
+    --bg:#0a0e15;
+    --panel:#131a26; --panel-hover:#161e2c; --panel2:#0e141e; --line:#212c3d; --line2:#2a3850;
+    --ink:#e4ecf5; --muted:#8493a8; --dim:#576375;
+    --blue:#5aa9ff; --blue-dim:#3d7ecf; --green:#3fce7c; --red:#ff6161; --amber:#ffb547; --violet:#b18cff; --cyan:#39d0d8;
+    --mono:Consolas,"Cascadia Code","SF Mono",Menlo,monospace;
+    --sans:"Segoe UI",system-ui,-apple-system,sans-serif;
+    --shadow:0 1px 2px rgba(0,0,0,.2), 0 8px 24px -12px rgba(0,0,0,.5);
+    --radius:12px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scrollbar-color:var(--line) transparent}
+  ::selection{background:rgba(90,169,255,.3)}
+  body{
+    background:
+      radial-gradient(1100px 500px at 15% -8%, rgba(90,169,255,.08), transparent 60%),
+      radial-gradient(900px 460px at 100% 0%, rgba(177,140,255,.06), transparent 55%),
+      var(--bg);
+    color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.55;min-height:100vh
+  }
+  a{color:var(--blue);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{max-width:1320px;margin:0 auto;padding:28px 24px 40px}
+
+  /* ===== Header ===== */
+  header{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding-bottom:18px;margin-bottom:22px;position:relative}
+  header::after{content:'';position:absolute;left:0;right:0;bottom:0;height:1px;background:linear-gradient(90deg,var(--line2),transparent 75%)}
+  header .brand{display:flex;align-items:center;gap:11px}
+  header .logo{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--blue),var(--violet));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:#0a0e15;box-shadow:0 4px 14px -4px rgba(90,169,255,.5);flex-shrink:0}
+  header h1{font-size:19px;font-weight:700;letter-spacing:.1px}
+  header .sub{color:var(--muted);font-size:12.5px;padding:3px 10px;border:1px solid var(--line);border-radius:20px;background:var(--panel2)}
+
+  /* ===== Config ===== */
+  .cfg{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:var(--radius);padding:20px 22px;margin-bottom:20px;box-shadow:var(--shadow);transition:border-color .15s}
+  .cfg h2{font-size:12.5px;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:14px;font-weight:700}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+  .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-weight:600}
+  .field input{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:8px;color:var(--ink);padding:9px 12px;font-family:var(--mono);font-size:12.5px;outline:none;transition:border-color .15s,box-shadow .15s}
+  .field input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(90,169,255,.14)}
+  .field .hint{font-size:11px;color:var(--dim);margin-top:5px}
+
+  /* ===== Label row: required mark + tooltip + help icon ===== */
+  .lbl-row{display:flex;align-items:center;gap:6px;margin-bottom:5px}
+  .lbl-row label{margin-bottom:0}
+  .req{color:var(--red);font-weight:700;font-size:12px}
+  .icon-btn{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;color:var(--dim);cursor:pointer;flex-shrink:0;transition:color .15s,background .15s;border:none;background:none;padding:0}
+  .icon-btn svg{width:100%;height:100%}
+  .icon-btn:hover,.icon-btn:focus-visible{color:var(--blue);background:rgba(90,169,255,.14);outline:none}
+  .tip{position:relative}
+  .tip .tip-bubble{position:absolute;left:0;bottom:calc(100% + 8px);background:#16202f;border:1px solid var(--line2);border-radius:8px;padding:9px 12px;font-size:11.5px;line-height:1.55;color:var(--ink);font-weight:400;letter-spacing:normal;text-transform:none;white-space:normal;width:250px;box-shadow:0 14px 30px -8px rgba(0,0,0,.6);opacity:0;visibility:hidden;transform:translateY(3px);transition:opacity .15s,transform .15s,visibility .15s;z-index:40;cursor:default}
+  .tip .tip-bubble::after{content:'';position:absolute;top:100%;left:8px;border:6px solid transparent;border-top-color:#16202f}
+  .tip:hover .tip-bubble,.tip:focus-visible .tip-bubble,.tip:focus-within .tip-bubble{opacity:1;visibility:visible;transform:translateY(0)}
+  .cfg-actions{display:flex;gap:10px;align-items:center;margin-top:16px;flex-wrap:wrap}
+  button{background:linear-gradient(180deg,#66b3ff,var(--blue));color:#06121f;border:none;border-radius:8px;padding:10px 20px;font-weight:700;font-size:13px;cursor:pointer;font-family:var(--sans);box-shadow:0 2px 10px -3px rgba(90,169,255,.5);transition:filter .15s,transform .1s}
+  button:hover{filter:brightness(1.08)}
+  button:active{transform:translateY(1px)}
+  button:disabled{opacity:.4;cursor:default;box-shadow:none}
+  button.ghost{background:transparent;color:var(--muted);border:1px solid var(--line);box-shadow:none}
+  button.ghost:hover{color:var(--ink);border-color:var(--line2);background:var(--panel-hover)}
+  #cmp-progress{color:var(--muted);font-size:12.5px}
+
+  /* ===== Panels / sections ===== */
+  section{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;margin-bottom:20px;box-shadow:var(--shadow)}
+  section h2{font-size:12.5px;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;position:relative;padding-right:24px;user-select:none;font-weight:700}
+  section h2 .cnt{font-family:var(--mono);color:var(--dim);font-size:11.5px;text-transform:none;font-weight:400}
+  section h2::after{content:'▾';position:absolute;right:0;top:50%;transform:translateY(-50%);color:var(--dim);font-size:11px;transition:transform .15s}
+  section h2:hover::after{color:var(--ink)}
+  section.collapsed h2{margin-bottom:0}
+  section.collapsed h2::after{content:'▸'}
+  section.collapsed > *:not(h2){display:none}
+  /* thu gọn khối so sánh 2 nhánh */
+  #cmp > h2{cursor:pointer;position:relative;padding-right:24px;user-select:none}
+  #cmp > h2::after{content:'▾';position:absolute;right:0;top:50%;transform:translateY(-50%);color:var(--dim);font-size:11px}
+  #cmp > h2:hover::after{color:var(--ink)}
+  #cmp.collapsed > h2{margin-bottom:0}
+  #cmp.collapsed > h2::after{content:'▸'}
+  #cmp.collapsed > *:not(h2){display:none}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:900px){.cols{grid-template-columns:1fr}}
+
+  /* ===== Searchable combobox ===== */
+  .combo{position:relative}
+  .combo input{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:8px;color:var(--ink);padding:9px 34px 9px 12px;font-family:var(--mono);font-size:12.5px;outline:none;transition:border-color .15s,box-shadow .15s;cursor:text}
+  .combo input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(90,169,255,.14)}
+  .combo input:disabled{opacity:.5;cursor:not-allowed}
+  .combo::after{content:'⌄';position:absolute;right:12px;top:9px;color:var(--dim);font-size:13px;pointer-events:none}
+  .combo-list{position:absolute;left:0;right:0;top:calc(100% + 5px);background:#16202f;border:1px solid var(--line2);border-radius:9px;max-height:260px;overflow-y:auto;z-index:30;display:none;box-shadow:0 12px 32px -8px rgba(0,0,0,.6);padding:4px}
+  .combo-list.open{display:block}
+  .combo-opt{padding:7px 10px;border-radius:6px;font-family:var(--mono);font-size:12.5px;color:var(--ink);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .combo-opt mark{background:rgba(90,169,255,.3);color:#fff;border-radius:2px;padding:0 1px}
+  .combo-opt:hover,.combo-opt.hi{background:rgba(90,169,255,.14);color:#fff}
+  .combo-empty{padding:8px 10px;color:var(--dim);font-size:12px;font-style:italic}
+
+  /* ===== Result search bar ===== */
+  .search-row{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .search-row .sfield{position:relative;flex:1;max-width:420px}
+  .search-row input{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:8px;color:var(--ink);padding:9px 12px 9px 32px;font-size:13px;outline:none;transition:border-color .15s,box-shadow .15s}
+  .search-row input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(90,169,255,.14)}
+  .search-row .sfield::before{content:'';position:absolute;left:11px;top:50%;width:9px;height:9px;margin-top:-7px;border:2px solid var(--dim);border-radius:50%}
+  .search-row .sfield::after{content:'';position:absolute;left:18px;top:50%;width:6px;height:2px;margin-top:2px;background:var(--dim);transform:rotate(45deg);border-radius:2px}
+  .search-row .scount{color:var(--dim);font-size:11.5px;font-family:var(--mono)}
+
+  /* tables */
+  .tblwrap{overflow-x:auto;overflow-y:auto;max-height:520px;border-radius:8px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th{color:var(--muted);text-align:left;font-weight:700;border-bottom:1px solid var(--line2);padding:8px 10px;white-space:nowrap;cursor:pointer;user-select:none;background:var(--panel2);position:sticky;top:0;z-index:1}
+  th.num,td.num{text-align:right;font-family:var(--mono)}
+  td{border-bottom:1px solid rgba(31,42,56,.5);padding:7px 10px;vertical-align:top}
+  tbody tr:nth-child(even) td{background:rgba(255,255,255,.012)}
+  tr:hover td{background:rgba(90,169,255,.06)}
+  tr.filtered-out{display:none}
+  .tag{display:inline-block;background:var(--panel2);border:1px solid var(--line);border-radius:5px;padding:1px 7px;font-size:11px;font-family:var(--mono);color:var(--muted);margin:1px 2px 1px 0;transition:border-color .15s,color .15s}
+  .tag:hover{border-color:var(--blue-dim);color:var(--blue)}
+  .tag.reactive{color:var(--red);border-color:#4a2326}
+  .pill{display:inline-block;border-radius:10px;padding:2px 10px;font-size:11px;font-family:var(--mono);font-weight:600}
+  .pill.done{background:rgba(63,206,124,.14);color:var(--green)}
+  .pill.active{background:rgba(90,169,255,.14);color:var(--blue)}
+  .pill.new{background:rgba(132,147,168,.15);color:var(--muted)}
+  .pill.late{background:rgba(255,97,97,.14);color:var(--red)}
+  .pill.qa{background:rgba(177,140,255,.14);color:var(--violet)}
+  .empty{color:var(--dim);font-style:italic;padding:14px 0}
+  .foot-note{color:var(--dim);font-size:11.5px;margin-top:8px;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="brand">
+    <div class="logo">AD</div>
+    <h1>ADO Project Dashboard</h1>
+  </div>
+  <div class="sub">So sánh 2 nhánh qua Pull Request</div>
+</header>
+
+<!-- ============ KẾT NỐI (dùng chung cho mọi chức năng) ============ -->
+<div class="cfg">
+  <h2>Kết nối</h2>
+  <div class="grid">
+    <div class="field">
+      <label>Server / Collection URL</label>
+      <input id="c-server" value="https://ado.sharepoint.vn/Projects">
+    </div>
+    <div class="field">
+      <label>Project</label>
+      <input id="c-project" value="FX_NGO-Devs-v2">
+    </div>
+    <div class="field">
+      <div class="lbl-row">
+        <label>Personal Access Token (PAT)</label>
+        <span class="req" title="Bắt buộc">*</span>
+        <span class="icon-btn tip" tabindex="0">
+          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.4"/><circle cx="8" cy="5.1" r="0.9" fill="currentColor"/><path d="M8 7.5V11.3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          <span class="tip-bubble">Chỉ dùng trong trang, không lưu lại. Cần scope: <b>Work Items (Read)</b> + <b>Code (Read)</b>.</span>
+        </span>
+        <button type="button" class="icon-btn" id="pat-token-link" title="Mở trang tạo Personal Access Token">
+          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6.5 3H4a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V9.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M9.5 2.5H13.5V6.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M13.5 2.5L7 9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+      <input id="c-pat" type="password" placeholder="dán PAT vào đây" required>
+      <div class="hint">Chỉ dùng trong trang, không lưu lại. Cần scope: Work Items (Read) + Code (Read). Bấm icon <svg style="width:11px;height:11px;vertical-align:-1px" viewBox="0 0 16 16" fill="none"><path d="M6.5 3H4a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V9.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M9.5 2.5H13.5V6.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M13.5 2.5L7 9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg> ở trên để mở trang tạo token.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SO SÁNH 2 NHÁNH ============ -->
+<div class="cfg" id="cmp">
+    <h2>So sánh 2 nhánh — work item khác nhau qua Pull Request</h2>
+    <div class="grid">
+      <div class="field">
+        <label>Repository</label>
+        <div class="combo" id="cmp-repo-combo">
+          <input type="text" id="cmp-repo-input" placeholder="— bấm &quot;Tải repo &amp; nhánh&quot; —" autocomplete="off" disabled>
+          <div class="combo-list" id="cmp-repo-list"></div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Nhánh A</label>
+        <div class="combo" id="cmp-a-combo">
+          <input type="text" id="cmp-a-input" placeholder="—" autocomplete="off" disabled>
+          <div class="combo-list" id="cmp-a-list"></div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Nhánh B</label>
+        <div class="combo" id="cmp-b-combo">
+          <input type="text" id="cmp-b-input" placeholder="—" autocomplete="off" disabled>
+          <div class="combo-list" id="cmp-b-list"></div>
+        </div>
+      </div>
+    </div>
+    <div class="cfg-actions">
+      <button class="ghost" id="cmp-loadrepo">Tải repo &amp; nhánh</button>
+      <button id="cmp-run" disabled>So sánh 2 nhánh</button>
+      <span id="cmp-progress"></span>
+    </div>
+    <div class="foot-note" style="margin-top:6px">
+      So sánh theo <b>toàn bộ lịch sử từ gốc</b>: lấy tập commit đầy đủ của mỗi nhánh → đối chiếu merge commit của mọi PR completed để biết PR thuộc nhánh nào → lấy work item của PR đó.
+      PR merge <b>trước lúc B tách khỏi A</b> được tính cho cả hai nhánh; kết quả chỉ ra work item nào <b>thật sự chỉ có ở một nhánh</b> — vd kiểm tra <span style="font-family:var(--mono)">develop</span> vs <span style="font-family:var(--mono)">main</span> trước khi release.
+    </div>
+    <div id="cmp-result" style="display:none;margin-top:16px">
+      <div class="search-row">
+        <div class="sfield">
+          <input type="text" id="cmp-search" placeholder="Tìm theo ID, tiêu đề, người thực hiện, tag, PR…">
+        </div>
+        <span class="scount" id="cmp-scount"></span>
+        <div style="flex:1"></div>
+        <button class="ghost" id="cmp-xlsx" disabled>Xuất Excel (.xlsx)</button>
+      </div>
+      <div class="cols">
+        <section style="margin:0">
+          <h2>Chỉ có ở <span id="cmp-aname" style="color:var(--blue)"></span> <span class="cnt" id="cmp-acnt"></span></h2>
+          <div class="tblwrap"><table id="cmp-atbl"></table></div>
+        </section>
+        <section style="margin:0">
+          <h2>Chỉ có ở <span id="cmp-bname" style="color:var(--green)"></span> <span class="cnt" id="cmp-bcnt"></span></h2>
+          <div class="tblwrap"><table id="cmp-btbl"></table></div>
+        </section>
+      </div>
+      <div class="foot-note" id="cmp-note" style="margin-top:10px"></div>
+    </div>
+    <div id="cmp-err" style="display:none;background:#2a1215;border:1px solid #5c2326;color:#ffb4b4;border-radius:8px;padding:12px;margin-top:12px;font-family:var(--mono);font-size:12px;white-space:pre-wrap;word-break:break-all"></div>
+</div><!-- /cmp -->
+
+<div class="foot-note" style="margin-bottom:30px">
+  Lưu ý: nếu mở file trực tiếp mà gọi API bị chặn CORS, hãy đặt file này lên cùng domain với ADO (vd một thư mục static trên ado.sharepoint.vn) hoặc chạy tạm <span style="font-family:var(--mono)">npx serve</span> / mở Edge với <span style="font-family:var(--mono)">--disable-web-security --user-data-dir=C:\tmp\edge</span> khi cần xem nhanh.
+</div>
+
+</div><!-- /wrap -->
+
+<script>
+"use strict";
+/* ============================================================
+   ADO Project Dashboard — Azure DevOps Server 2022, API 6.1
+   ============================================================ */
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt = n => (n ?? 0).toLocaleString('vi-VN');
+
+let cfg = {};
+
+/* ---------- helpers ---------- */
+function readCfg(){
+  cfg = {
+    server: $('#c-server').value.trim().replace(/\/+$/,''),
+    project: $('#c-project').value.trim(),
+    pat: $('#c-pat').value.trim(),
+    api: '6.1-preview'
+  };
+}
+const DONE_STATES = ['closed'];
+const isDone = it => DONE_STATES.includes((it.state||'').toLowerCase());
+const personName = v => !v ? '' : (typeof v === 'string' ? v.replace(/\s*<[^>]*>$/,'') : (v.displayName || v.uniqueName || ''));
+
+/* Gọi API qua proxy cùng-origin của server.js (tránh CORS khi trang chạy trên domain khác ADO) */
+async function api(path, opts = {}){
+  const target = '/proxy?url=' + encodeURIComponent(cfg.server + path);
+  const res = await fetch(target, {
+    ...opts,
+    headers: { 'Content-Type':'application/json', 'Authorization':'Basic ' + btoa(':' + cfg.pat), ...(opts.headers||{}) }
+  });
+  if(!res.ok){
+    const t = await res.text().catch(()=> '');
+    throw new Error('HTTP ' + res.status + ' ' + path + '\n' + t.slice(0, 400));
+  }
+  return res.json();
+}
+
+async function pool(items, worker, size, onTick){
+  let i = 0, done = 0; const out = new Array(items.length);
+  async function run(){
+    while(i < items.length){
+      const idx = i++;
+      try{ out[idx] = await worker(items[idx]); }catch(e){ out[idx] = null; }
+      done++; if(onTick) onTick(done, items.length);
+    }
+  }
+  await Promise.all(Array.from({length: Math.min(size, items.length)}, run));
+  return out;
+}
+
+/* người chuyển work item sang QA: dùng ResolvedBy lấy từ work item khi so sánh nhánh */
+const qaPerson = it => personName(it.qaBy || it.resolvedBy);
+
+/* ============================================================
+   XLSX builder không dùng thư viện (ZIP store + OOXML)
+   ============================================================ */
+function _crc32(bytes){
+  if(!_crc32.t){ _crc32.t = []; for(let n=0;n<256;n++){ let c=n; for(let k=0;k<8;k++) c = (c&1) ? (0xEDB88320 ^ (c>>>1)) : (c>>>1); _crc32.t[n]=c>>>0; } }
+  const t = _crc32.t; let crc = 0 ^ (-1);
+  for(let i=0;i<bytes.length;i++) crc = (crc>>>8) ^ t[(crc ^ bytes[i]) & 0xFF];
+  return (crc ^ (-1)) >>> 0;
+}
+function _zipStore(files){
+  const enc = new TextEncoder(), chunks = [], central = []; let offset = 0;
+  const u16 = (a,v)=>a.push(v&255,(v>>>8)&255);
+  const u32 = (a,v)=>a.push(v&255,(v>>>8)&255,(v>>>16)&255,(v>>>24)&255);
+  for(const f of files){
+    const name = enc.encode(f.name), crc = _crc32(f.data), local = [];
+    u32(local,0x04034b50); u16(local,20); u16(local,0x0800); u16(local,0); u16(local,0); u16(local,0);
+    u32(local,crc); u32(local,f.data.length); u32(local,f.data.length); u16(local,name.length); u16(local,0);
+    for(const b of name) local.push(b);
+    const lh = Uint8Array.from(local);
+    chunks.push(lh, f.data);
+    const c = [];
+    u32(c,0x02014b50); u16(c,20); u16(c,20); u16(c,0x0800); u16(c,0); u16(c,0); u16(c,0);
+    u32(c,crc); u32(c,f.data.length); u32(c,f.data.length);
+    u16(c,name.length); u16(c,0); u16(c,0); u16(c,0); u16(c,0); u32(c,0); u32(c,offset);
+    for(const b of name) c.push(b);
+    central.push(Uint8Array.from(c));
+    offset += lh.length + f.data.length;
+  }
+  const cStart = offset; let cSize = 0;
+  for(const c of central){ chunks.push(c); cSize += c.length; offset += c.length; }
+  const end = [];
+  u32(end,0x06054b50); u16(end,0); u16(end,0); u16(end,central.length); u16(end,central.length);
+  u32(end,cSize); u32(end,cStart); u16(end,0);
+  chunks.push(Uint8Array.from(end));
+  const total = chunks.reduce((s,c)=>s+c.length,0), out = new Uint8Array(total); let p = 0;
+  for(const c of chunks){ out.set(c,p); p += c.length; }
+  return out;
+}
+function buildXlsx(sheets){   // sheets: [{name, aoa:[[...header],[...row]]}], hàng đầu = header (in đậm)
+  const enc = new TextEncoder();
+  const xe = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const colName = n => { let s=''; n++; while(n>0){ const m=(n-1)%26; s=String.fromCharCode(65+m)+s; n=Math.floor((n-1)/26); } return s; };
+  const sheetXml = aoa => {
+    let rows = '';
+    aoa.forEach((row, r) => {
+      let cells = '';
+      row.forEach((val, c) => {
+        const ref = colName(c)+(r+1), st = r===0 ? ' s="1"' : '';
+        if(typeof val === 'number' && isFinite(val)) cells += `<c r="${ref}"${st}><v>${val}</v></c>`;
+        else cells += `<c r="${ref}" t="inlineStr"${st}><is><t xml:space="preserve">${xe(val)}</t></is></c>`;
+      });
+      rows += `<row r="${r+1}">${cells}</row>`;
+    });
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>${rows}</sheetData></worksheet>`;
+  };
+  const files = [];
+  const overrides = sheets.map((s,i)=>`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('');
+  files.push({ name:'[Content_Types].xml', data: enc.encode(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${overrides}</Types>`) });
+  files.push({ name:'_rels/.rels', data: enc.encode(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`) });
+  const sheetsTag = sheets.map((s,i)=>`<sheet name="${xe(s.name)}" sheetId="${i+1}" r:id="rId${i+1}"/>`).join('');
+  files.push({ name:'xl/workbook.xml', data: enc.encode(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${sheetsTag}</sheets></workbook>`) });
+  const relSheets = sheets.map((s,i)=>`<Relationship Id="rId${i+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i+1}.xml"/>`).join('');
+  files.push({ name:'xl/_rels/workbook.xml.rels', data: enc.encode(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${relSheets}<Relationship Id="rId${sheets.length+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`) });
+  files.push({ name:'xl/styles.xml', data: enc.encode(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="1"><fill><patternFill patternType="none"/></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/></cellXfs></styleSheet>`) });
+  sheets.forEach((s,i)=> files.push({ name:`xl/worksheets/sheet${i+1}.xml`, data: enc.encode(sheetXml(s.aoa)) }));
+  return _zipStore(files);
+}
+function downloadXlsx(bytes, name){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([bytes], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+  a.download = name; a.click();
+}
+const xlsxSheetName = s => (String(s).replace(/[\\\/\?\*\[\]:]/g,'_').slice(0,28)) || 'Sheet';
+
+/* Icon mở trang tạo Personal Access Token, dựa theo Server / Collection URL đang nhập */
+$('#pat-token-link').addEventListener('click', () => {
+  const server = $('#c-server').value.trim().replace(/\/+$/, '');
+  if(!server){ cmpErr(new Error('Nhập Server / Collection URL trước đã.')); return; }
+  window.open(server + '/_usersSettings/tokens', '_blank', 'noopener');
+});
+
+/* Thu gọn / mở rộng khối so sánh nhánh khi bấm tiêu đề (mặc định mở) */
+document.addEventListener('click', e => {
+  const h = e.target.closest('h2');
+  if(!h) return;
+  const p = h.parentElement;
+  if(p && (p.tagName === 'SECTION' || p.id === 'cmp')) p.classList.toggle('collapsed');
+});
+
+/* ============================================================
+   SO SÁNH 2 NHÁNH — work item khác nhau qua Pull Request
+   ============================================================ */
+const PROJ = () => encodeURIComponent(cfg.project);
+const GIT_VERS = ['6.0', '6.1-preview.1', '7.1-preview.1', '5.1-preview.1'];
+const WIT_VERS = ['6.1-preview.1', '6.0', '7.1-preview.1'];
+let cmpRepoName = '';
+
+/* ---------- combobox: input có gõ để lọc, thay cho <select> ---------- */
+function Combo(inputSel, listSel, hooks){
+  hooks = hooks || {};
+  const input = $(inputSel), list = $(listSel);
+  let items = [], selected = null, hi = -1;
+
+  function open(){ list.classList.add('open'); }
+  function close(){ list.classList.remove('open'); hi = -1; }
+  function markHi(opts){ opts.forEach((o,i) => o.classList.toggle('hi', i === hi)); if(opts[hi]) opts[hi].scrollIntoView({block:'nearest'}); }
+  function renderList(q){
+    const query = (q || '').trim().toLowerCase();
+    const src = query ? items.filter(it => it.label.toLowerCase().includes(query)) : items;
+    if(!src.length){
+      list.innerHTML = `<div class="combo-empty">${items.length ? 'Không có kết quả' : (hooks.emptyMsg || 'Chưa có dữ liệu')}</div>`;
+    }else{
+      list.innerHTML = src.map(it => {
+        let html = esc(it.label);
+        if(query){
+          const idx = it.label.toLowerCase().indexOf(query);
+          if(idx >= 0) html = esc(it.label.slice(0,idx)) + '<mark>' + esc(it.label.slice(idx, idx+query.length)) + '</mark>' + esc(it.label.slice(idx+query.length));
+        }
+        return `<div class="combo-opt" data-value="${esc(it.value)}">${html}</div>`;
+      }).join('');
+    }
+    hi = -1; open();
+  }
+  input.addEventListener('focus', () => { if(input.disabled) return; renderList(selected && input.value === selected.label ? '' : input.value); });
+  input.addEventListener('input', () => { selected = null; renderList(input.value); if(hooks.onClear) hooks.onClear(); });
+  input.addEventListener('keydown', e => {
+    if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){
+      e.preventDefault();
+      if(!list.classList.contains('open')) renderList(input.value);
+      const opts = [...list.querySelectorAll('.combo-opt')];
+      hi = e.key === 'ArrowDown' ? Math.min(hi+1, opts.length-1) : Math.max(hi-1, 0);
+      markHi(opts);
+    }
+    else if(e.key === 'Enter'){
+      const opts = [...list.querySelectorAll('.combo-opt')];
+      if(hi >= 0 && opts[hi]){ e.preventDefault(); opts[hi].dispatchEvent(new MouseEvent('mousedown', {bubbles:true})); }
+    }
+    else if(e.key === 'Escape'){ close(); input.blur(); }
+  });
+  list.addEventListener('mousedown', e => {
+    const opt = e.target.closest('.combo-opt');
+    if(!opt) return;
+    e.preventDefault();
+    const item = items.find(it => String(it.value) === opt.dataset.value);
+    if(!item) return;
+    selected = item; input.value = item.label; close();
+    if(hooks.onChange) hooks.onChange(item);
+  });
+  document.addEventListener('click', e => {
+    if(input.contains(e.target) || list.contains(e.target)) return;
+    close(); input.value = selected ? selected.label : '';
+  });
+  return {
+    setItems(arr){ items = arr || []; },
+    clear(placeholder){ items = []; selected = null; input.value = ''; close(); if(placeholder) input.placeholder = placeholder; },
+    enable(){ input.disabled = false; },
+    disable(){ input.disabled = true; },
+    selectByValue(val){ const item = items.find(it => String(it.value) === String(val)); if(!item) return false; selected = item; input.value = item.label; return true; },
+    getValue(){ return selected ? selected.value : null; },
+    getItem(){ return selected; },
+    setPlaceholder(t){ input.placeholder = t; }
+  };
+}
+const branchACombo = Combo('#cmp-a-input', '#cmp-a-list', { emptyMsg:'Chọn repository trước', onChange: checkCmpReady, onClear: checkCmpReady });
+const branchBCombo = Combo('#cmp-b-input', '#cmp-b-list', { emptyMsg:'Chọn repository trước', onChange: checkCmpReady, onClear: checkCmpReady });
+const repoCombo = Combo('#cmp-repo-input', '#cmp-repo-list', {
+  emptyMsg:'Bấm "Tải repo &amp; nhánh"',
+  onChange(item){ cmpRepoName = item.name || item.label; loadBranches(item.value); },
+  onClear(){ branchACombo.clear(); branchBCombo.clear(); branchACombo.disable(); branchBCombo.disable(); checkCmpReady(); }
+});
+
+/* gọi API thử lần lượt nhiều api-version cho tới khi không lỗi version */
+async function apiTry(path, versions, opts){
+  let lastErr;
+  for(const v of versions){
+    const sep = path.includes('?') ? '&' : '?';
+    try{ return await api(path + sep + 'api-version=' + v, opts); }
+    catch(e){ lastErr = e; if(!/HTTP 40[04]|version|api-version/i.test(e.message)) throw e; }
+  }
+  throw lastErr;
+}
+function cmpProgress(m){ $('#cmp-progress').textContent = m || ''; }
+function cmpErr(e){
+  const b = $('#cmp-err'); b.style.display = 'block';
+  let msg = String(e && e.message || e);
+  if(/401|403/.test(msg)) msg += '\n→ PAT cần thêm scope Code (Read).';
+  if(/Failed to fetch|CORS/i.test(msg)) msg += '\n→ Có thể bị chặn CORS. Xem ghi chú cuối trang.';
+  b.textContent = msg;
+}
+
+$('#cmp-loadrepo').addEventListener('click', async () => {
+  readCfg(); $('#cmp-err').style.display = 'none';
+  if(!cfg.pat){ cmpErr(new Error('Chưa nhập PAT.')); return; }
+  $('#cmp-loadrepo').disabled = true; cmpProgress('Đang tải danh sách repository…');
+  try{
+    const r = await apiTry(`/${PROJ()}/_apis/git/repositories`, GIT_VERS);
+    const repos = (r.value || []).sort((a,b)=>a.name.localeCompare(b.name));
+    repoCombo.setItems(repos.map(x => ({ value:x.id, label:x.name, name:x.name })));
+    repoCombo.enable(); repoCombo.setPlaceholder('— gõ để tìm repository —');
+    cmpProgress(repos.length + ' repository. Chọn repo để nạp nhánh.');
+  }catch(e){ cmpErr(e); cmpProgress(''); }
+  finally{ $('#cmp-loadrepo').disabled = false; }
+});
+
+async function loadBranches(repoId){
+  branchACombo.clear(); branchBCombo.clear();
+  branchACombo.disable(); branchBCombo.disable();
+  checkCmpReady();
+  if(!repoId) return;
+  cmpProgress('Đang tải danh sách nhánh…');
+  try{
+    const refs = await apiTry(`/${PROJ()}/_apis/git/repositories/${repoId}/refs?filter=heads/&$top=1000`, GIT_VERS);
+    const names = (refs.value || []).map(x => x.name.replace('refs/heads/','')).sort((a,b)=>a.localeCompare(b));
+    const items = names.map(n => ({ value:n, label:n }));
+    branchACombo.setItems(items); branchBCombo.setItems(items);
+    branchACombo.enable(); branchBCombo.enable();
+    branchACombo.setPlaceholder('— gõ để tìm nhánh —'); branchBCombo.setPlaceholder('— gõ để tìm nhánh —');
+    const pick = (combo, ...cands) => { for(const c of cands){ const m = names.find(n => n === c || n.endsWith('/'+c)); if(m){ combo.selectByValue(m); return; } } };
+    pick(branchACombo, 'develop', 'dev', 'staging');
+    pick(branchBCombo, 'main', 'master', 'release');
+    cmpProgress(names.length + ' nhánh.');
+    checkCmpReady();
+  }catch(e){ cmpErr(e); cmpProgress(''); }
+}
+function checkCmpReady(){
+  const a = branchACombo.getValue(), b = branchBCombo.getValue(), repo = repoCombo.getValue();
+  $('#cmp-run').disabled = !(repo && a && b && a !== b);
+}
+
+$('#cmp-run').addEventListener('click', runCompare);
+
+$('#cmp-search').addEventListener('input', applyCmpSearch);
+function applyCmpSearch(){
+  const q = $('#cmp-search').value.trim().toLowerCase();
+  const rows = document.querySelectorAll('#cmp-atbl tr[data-s], #cmp-btbl tr[data-s]');
+  let shown = 0;
+  rows.forEach(tr => {
+    const match = !q || tr.dataset.s.includes(q);
+    tr.classList.toggle('filtered-out', !match);
+    if(match) shown++;
+  });
+  $('#cmp-scount').textContent = q ? `${shown}/${rows.length} hiển thị` : '';
+}
+
+let cmpExport = null;
+$('#cmp-xlsx').addEventListener('click', () => {
+  if(!cmpExport) return;
+  const bytes = buildXlsx(cmpExport.sheets);
+  const fname = `${cfg.project||'compare'}-${xlsxSheetName(cmpExport.A)}-vs-${xlsxSheetName(cmpExport.B)}.xlsx`;
+  downloadXlsx(bytes, fname);
+});
+
+async function runCompare(){
+  readCfg(); $('#cmp-err').style.display = 'none';
+  const repoId = repoCombo.getValue(), A = branchACombo.getValue(), B = branchBCombo.getValue();
+  if(!(repoId && A && B) || A === B){ return; }
+  $('#cmp-run').disabled = true; $('#cmp-result').style.display = 'none'; $('#cmp-xlsx').disabled = true; cmpExport = null;
+  try{
+    // 1. Toàn bộ commit từ GỐC tới đầu mỗi nhánh (không so lệch) → gồm cả phần trước lúc tách nhánh
+    const setA = await branchCommitSet(repoId, A, A);
+    const setB = await branchCommitSet(repoId, B, B);
+
+    // 2. Mọi PR completed của repo
+    const prs = await allCompletedPRs(repoId);
+
+    // 3. Phân loại PR theo merge commit thuộc nhánh nào (PR trước lúc tách → thuộc CẢ hai)
+    const union = [];   // {pr, inA, inB}
+    for(const pr of prs){
+      const mc = pr.lastMergeCommit && pr.lastMergeCommit.commitId;
+      if(!mc) continue;
+      const inA = setA.has(mc), inB = setB.has(mc);
+      if(inA || inB) union.push({ pr, inA, inB });
+    }
+
+    // 4. Lấy work item của từng PR liên quan (mỗi PR chỉ gọi 1 lần, kể cả PR dùng chung)
+    cmpProgress(`Lấy work item của ${union.length} PR liên quan…`);
+    const wiA = new Map(), wiB = new Map();  // wiId → Set<prId>
+    let doneN = 0;
+    await pool(union, async u => {
+      const r = await apiTry(`/${PROJ()}/_apis/git/repositories/${repoId}/pullRequests/${u.pr.pullRequestId}/workitems`, GIT_VERS);
+      for(const w of (r.value || [])){
+        const id = +w.id;
+        if(u.inA){ if(!wiA.has(id)) wiA.set(id, new Set()); wiA.get(id).add(u.pr.pullRequestId); }
+        if(u.inB){ if(!wiB.has(id)) wiB.set(id, new Set()); wiB.get(id).add(u.pr.pullRequestId); }
+      }
+    }, 8, (d,t) => cmpProgress(`Lấy work item của PR ${d}/${t}…`));
+
+    const allIds = [...new Set([...wiA.keys(), ...wiB.keys()])];
+    cmpProgress(`Lấy chi tiết ${allIds.length} work item…`);
+    const details = await fetchWIDetails(allIds);
+
+    renderCompare(A, B, repoId, {
+      wiA, wiB, details,
+      prsA: union.filter(u=>u.inA).length,
+      prsB: union.filter(u=>u.inB).length,
+      commitsA: setA.size, commitsB: setB.size,
+      totalPRs: prs.length,
+      capped: setA.capped || setB.capped
+    });
+    cmpProgress('Xong.');
+  }catch(e){ cmpErr(e); cmpProgress(''); }
+  finally{ $('#cmp-run').disabled = false; }
+}
+
+/* Toàn bộ commit reachable từ đầu nhánh (git log <branch>), phân trang */
+async function branchCommitSet(repoId, branch, tag){
+  const set = new Set(); set.capped = false;
+  let skip = 0; const top = 100, MAX_PAGES = 300;   // trần ~30k commit
+  for(let g = 0; g < MAX_PAGES; g++){
+    const path = `/${PROJ()}/_apis/git/repositories/${repoId}/commits` +
+      `?searchCriteria.itemVersion.version=${encodeURIComponent(branch)}&searchCriteria.itemVersion.versionType=branch` +
+      `&searchCriteria.$top=${top}&searchCriteria.$skip=${skip}`;
+    const r = await apiTry(path, GIT_VERS);
+    const arr = r.value || [];
+    for(const c of arr) set.add(c.commitId);
+    cmpProgress(`Đọc lịch sử nhánh ${tag}: ${set.size} commit…`);
+    if(arr.length < top) break;
+    skip += top;
+    if(g === MAX_PAGES - 1) set.capped = true;
+  }
+  return set;
+}
+
+/* Mọi PR completed của repo, phân trang */
+async function allCompletedPRs(repoId){
+  const out = []; let skip = 0; const top = 100, MAX_PAGES = 300;
+  for(let g = 0; g < MAX_PAGES; g++){
+    const path = `/${PROJ()}/_apis/git/repositories/${repoId}/pullrequests` +
+      `?searchCriteria.status=completed&$top=${top}&$skip=${skip}`;
+    const r = await apiTry(path, GIT_VERS);
+    const arr = r.value || [];
+    out.push(...arr);
+    cmpProgress(`Đọc pull request completed: ${out.length}…`);
+    if(arr.length < top) break;
+    skip += top;
+  }
+  return out;
+}
+
+async function fetchWIDetails(ids){
+  const out = new Map();
+  const fields = ['System.Id','System.Title','System.WorkItemType','System.State','System.AssignedTo','System.Tags','Microsoft.VSTS.Common.ResolvedBy'];
+  for(let s = 0; s < ids.length; s += 200){
+    if(!ids.length) break;
+    const data = await apiTry(`/_apis/wit/workitemsbatch`, WIT_VERS,
+      { method:'POST', body: JSON.stringify({ ids: ids.slice(s, s + 200), fields, errorPolicy:'omit' }) });
+    for(const w of (data.value || [])){
+      const f = w.fields || {};
+      out.set(w.id, { id: w.id, title: f['System.Title']||'', type: f['System.WorkItemType']||'',
+        state: f['System.State']||'', assignedTo: f['System.AssignedTo']||null,
+        resolvedBy: f['Microsoft.VSTS.Common.ResolvedBy']||null,
+        tags: (f['System.Tags']||'').split(';').map(t=>t.trim()).filter(Boolean) });
+    }
+  }
+  return out;
+}
+
+function renderCompare(A, B, repoId, data){
+  $('#cmp-result').style.display = 'block';
+  $('#cmp-aname').textContent = A; $('#cmp-bname').textContent = B;
+  const onlyA = [...data.wiA.keys()].filter(id => !data.wiB.has(id));
+  const onlyB = [...data.wiB.keys()].filter(id => !data.wiA.has(id));
+  $('#cmp-acnt').textContent = `${onlyA.length} khác biệt · ${data.prsA} PR · ${fmt(data.commitsA)} commit`;
+  $('#cmp-bcnt').textContent = `${onlyB.length} khác biệt · ${data.prsB} PR · ${fmt(data.commitsB)} commit`;
+
+  const prUrl = prId => `${cfg.server}/${PROJ()}/_git/${encodeURIComponent(cmpRepoName)}/pullrequest/${prId}`;
+  const wiUrl = id => `${cfg.server}/${PROJ()}/_workitems/edit/${id}`;
+  const rowsFor = (ids, prMap) => {
+    if(!ids.length) return '<tbody><tr><td class="empty">Không có work item khác biệt</td></tr></tbody>';
+    ids.sort((a,b)=>a-b);
+    return '<thead><tr><th>ID</th><th>Loại</th><th>Tiêu đề</th><th>State</th><th>Assigned</th><th>Người chuyển QA</th><th>PR</th></tr></thead><tbody>' +
+      ids.map(id => {
+        const it = data.details.get(id) || { id, title:'(không lấy được)', type:'', state:'', assignedTo:null, resolvedBy:null, tags:[] };
+        const prs = [...(prMap.get(id) || [])].sort((a,b)=>a-b);
+        const assigned = personName(it.assignedTo), qa = qaPerson(it);
+        const s = [id, it.type, it.title, it.state, assigned, qa, ...prs.map(p=>'!'+p)].join(' ').toLowerCase();
+        return `<tr data-s="${esc(s)}">
+          <td><a href="${wiUrl(id)}" target="_blank">#${id}</a></td>
+          <td>${esc(it.type)}</td><td>${esc(it.title)}</td>
+          <td><span class="pill ${isDone(it)?'done':(it.state==='New'?'new':'active')}">${esc(it.state)}</span></td>
+          <td>${esc(assigned)}</td>
+          <td>${esc(qa)}</td>
+          <td>${prs.map(p=>`<a class="tag" href="${prUrl(p)}" target="_blank">!${p}</a>`).join(' ')}</td>
+        </tr>`;
+      }).join('') + '</tbody>';
+  };
+  $('#cmp-atbl').innerHTML = rowsFor(onlyA, data.wiA);
+  $('#cmp-btbl').innerHTML = rowsFor(onlyB, data.wiB);
+  $('#cmp-search').value = ''; applyCmpSearch();
+
+  /* dữ liệu cho Xuất Excel */
+  const header = ['ID','Loại','Tiêu đề','State','Assigned','Người chuyển QA','PR','Link work item'];
+  const exportRows = (ids, prMap) => {
+    ids = ids.slice().sort((a,b)=>a-b);
+    return [header].concat(ids.map(id => {
+      const it = data.details.get(id) || { id, title:'', type:'', state:'', assignedTo:null, resolvedBy:null };
+      const prs = [...(prMap.get(id) || [])].sort((a,b)=>a-b);
+      return [ id, it.type, it.title, it.state, personName(it.assignedTo), qaPerson(it),
+               prs.map(p=>'!'+p).join(' '), wiUrl(id) ];
+    }));
+  };
+  cmpExport = {
+    A, B,
+    sheets: [
+      { name: 'A - ' + xlsxSheetName(A), aoa: exportRows(onlyA, data.wiA) },
+      { name: 'B - ' + xlsxSheetName(B), aoa: exportRows(onlyB, data.wiB) }
+    ]
+  };
+  $('#cmp-xlsx').disabled = false;
+
+  const shared = [...data.wiA.keys()].filter(id => data.wiB.has(id));
+  let note = `So sánh theo <b>toàn bộ lịch sử từ gốc</b> của mỗi nhánh: PR merge trước lúc B tách khỏi A được tính cho cả hai nhánh. Bảng chỉ liệt kê work item <b>chỉ có ở một nhánh</b>. `;
+  if(shared.length) note += `${shared.length} work item dùng chung (đã có ở cả hai) được lược bỏ. `;
+  if(data.capped) note += `⚠ Lịch sử quá dài, đã chạm trần ~30k commit nên có thể thiếu commit cũ nhất. `;
+  if(!data.commitsA && !data.commitsB)
+    note += `Không đọc được commit — kiểm tra tên nhánh và scope Code (Read) của PAT.`;
+  else if(!data.prsA && !data.prsB)
+    note += `Không có PR completed nào thuộc lịch sử 2 nhánh — có thể commit push thẳng không qua PR.`;
+  else if(!onlyA.length && !onlyB.length)
+    note += `Hai nhánh có cùng tập work item qua PR (không khác biệt).`;
+  else
+    note += `Nếu thiếu work item mong đợi: kiểm tra PR tương ứng có gắn work item không (tab "Work Items" trong PR).`;
+  $('#cmp-note').innerHTML = note;
+}
+
+</script>
+
+</body>
+</html>
