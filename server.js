@@ -14,6 +14,11 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const isDev = process.env.NODE_ENV !== 'production';
 const PUBLIC_DIR = path.join(__dirname, 'public');
+const DIST_DIR = path.join(__dirname, 'dist');
+// Production build (pnpm build / Dockerfile) tạo dist/ với code JS đã obfuscate.
+// Production ưu tiên phục vụ dist/ khi có; dev luôn dùng public/ (nguồn gốc, để hot reload sửa trực tiếp),
+// kể cả khi có sẵn dist/ cũ trên máy do lỡ chạy `pnpm build` local.
+const SERVE_DIR = (!isDev && fs.existsSync(DIST_DIR)) ? DIST_DIR : PUBLIC_DIR;
 
 // Chỉ cho phép proxy tới các host trong danh sách này (chặn SSRF / open relay).
 // Đổi qua biến môi trường ALLOWED_HOSTS, phân tách bởi dấu phẩy, khi deploy domain/server ADO khác.
@@ -40,7 +45,7 @@ if(isDev){
   });
 }
 
-app.use(express.static(PUBLIC_DIR));
+app.use(express.static(SERVE_DIR));
 app.use('/proxy', express.raw({ type: '*/*', limit: '10mb' }));
 
 app.all('/proxy', async (req, res) => {
@@ -78,6 +83,7 @@ app.all('/proxy', async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`ADO Dashboard đang chạy tại http://localhost:${PORT}`);
+  console.log(`Phục vụ static từ: ${path.relative(__dirname, SERVE_DIR) || '.'}`);
   console.log(`Cho phép proxy tới: ${ALLOWED_HOSTS.join(', ')}`);
   if(isDev) console.log('Hot reload: đang bật (sửa file trong public/ sẽ tự refresh trình duyệt).');
 });
