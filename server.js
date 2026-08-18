@@ -8,39 +8,16 @@
 
 const express = require('express');
 const path = require('path');
-const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const isDev = process.env.NODE_ENV !== 'production';
-const PUBLIC_DIR = path.join(__dirname, 'public');
 
 // Chỉ cho phép proxy tới các host trong danh sách này (chặn SSRF / open relay).
 // Đổi qua biến môi trường ALLOWED_HOSTS, phân tách bởi dấu phẩy, khi deploy domain/server ADO khác.
 const ALLOWED_HOSTS = (process.env.ALLOWED_HOSTS || 'ado.sharepoint.vn')
   .split(',').map(h => h.trim().toLowerCase()).filter(Boolean);
 
-// Hot reload khi dev (pnpm dev): livereload theo dõi public/, tự refresh trình
-// duyệt khi sửa file. Tự chèn script client vào HTML thay vì dùng
-// connect-livereload — package đó không tương thích với response của
-// express.static (Content-Length khoá sẵn nên script không lọt vào được).
-// Không require ở production nên không cần package này trong node_modules production.
-if(isDev){
-  const livereload = require('livereload');
-  const lrServer = livereload.createServer({ exts: ['html', 'css', 'js'] });
-  lrServer.watch(PUBLIC_DIR);
-
-  const LR_SNIPPET = '<script src="http://localhost:35729/livereload.js?snipver=1"></script>\n</body>';
-  app.get(/^\/(.*\.html)?$/, (req, res, next) => {
-    const file = req.path === '/' ? 'index.html' : req.path.slice(1);
-    fs.readFile(path.join(PUBLIC_DIR, file), 'utf8', (err, html) => {
-      if(err) return next();
-      res.type('html').send(html.replace('</body>', LR_SNIPPET));
-    });
-  });
-}
-
-app.use(express.static(PUBLIC_DIR));
+app.use(express.static(path.join(__dirname, 'public')));
 app.use('/proxy', express.raw({ type: '*/*', limit: '10mb' }));
 
 app.all('/proxy', async (req, res) => {
@@ -79,5 +56,4 @@ app.all('/proxy', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`ADO Dashboard đang chạy tại http://localhost:${PORT}`);
   console.log(`Cho phép proxy tới: ${ALLOWED_HOSTS.join(', ')}`);
-  if(isDev) console.log('Hot reload: đang bật (sửa file trong public/ sẽ tự refresh trình duyệt).');
 });
